@@ -1,0 +1,79 @@
+# serverless.yml
+
+service: file-processing-api
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ap-south-1
+
+  environment:
+    EXCEL_BUCKET_NAME: excel-input-sheets-260825
+    MAX_FILES_TO_MERGE: 20
+    PDF_SOURCE_BUCKET_NAME: pdf-io-files-260825
+    PDF_DEST_BUCKET_NAME: pdf-output-files-260825
+
+  iam:
+    role:
+      statements:
+        # Permissions for Excel Merger
+        - Effect: "Allow"
+          Action: "s3:ListBucket"
+          Resource: "arn:aws:s3:::${self:provider.environment.EXCEL_BUCKET_NAME}"
+        - Effect: "Allow"
+          Action: ["s3:GetObject", "s3:PutObject"]
+          Resource: "arn:aws:s3:::${self:provider.environment.EXCEL_BUCKET_NAME}/*"
+        # Permissions for PDF Zipper
+        - Effect: "Allow"
+          Action: "s3:ListBucket"
+          Resource: "arn:aws:s3:::${self:provider.environment.PDF_SOURCE_BUCKET_NAME}"
+        - Effect: "Allow"
+          Action: "s3:GetObject"
+          Resource: "arn:aws:s3:::${self:provider.environment.PDF_SOURCE_BUCKET_NAME}/*"
+        - Effect: "Allow"
+          Action: "s3:PutObject"
+          Resource: "arn:aws:s3:::${self:provider.environment.PDF_DEST_BUCKET_NAME}/*"
+        - Effect: "Allow"
+          Action: "s3:GetObject"
+          Resource: "arn:aws:s3:::${self:provider.environment.PDF_DEST_BUCKET_NAME}/*"
+
+functions:
+  # Function 1: Points to excel-handler.js
+  mergeExcelFiles:
+    handler: excel-handler.mergeExcelFiles
+    description: Merges Excel files from S3 within a date range.
+    events:
+      - httpApi:
+          path: /merge-excel
+          method: get
+
+  # Function 2: Points to pdf-handler.js
+  compressPdfFiles:
+    handler: pdf-handler.compressPdfFiles
+    description: Compresses PDF files from S3 within a date range.
+    events:
+      - httpApi:
+          path: /compress-pdf
+          method: get
+
+package:
+  individually: true
+
+plugins:
+  - serverless-offline
+
+resources:
+  Resources:
+    ExcelBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${self:provider.environment.EXCEL_BUCKET_NAME}
+    PdfSourceBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${self:provider.environment.PDF_SOURCE_BUCKET_NAME}
+    PdfDestinationBucket:
+      Type: 'AWS::S3::Bucket'
+      Properties:
+        BucketName: ${self:provider.environment.PDF_DEST_BUCKET_NAME}

@@ -1,0 +1,23 @@
+# Node.js dependencies
+node_modules/
+
+# Serverless Framework build artifacts
+.serverless/
+.webpack/
+
+# Log files
+*.log
+npm-debug.log*
+
+# Environment variables file (contains secrets)
+.env
+
+# macOS specific files
+.DS_Store
+
+# Windows specific files
+Thumbs.db
+
+# IDE/Editor folders
+.vscode/
+.idea/ 
